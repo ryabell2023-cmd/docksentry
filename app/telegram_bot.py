@@ -686,6 +686,7 @@ class TelegramBot:
 
         elif text == "/debug":
             self.config.debug = not self.config.debug
+            self.config.save_persistent()
             status = self.t("debug_on") if self.config.debug else self.t("debug_off")
             self.send_message(self.t("debug_mode", status=status))
 
@@ -713,6 +714,7 @@ class TelegramBot:
             if len(parts) == 2 and parts[1].lower() in langs:
                 new_lang = parts[1].lower()
                 self.config.language = new_lang
+                self.config.save_persistent()
                 self.t = get_translator(new_lang)
                 self.send_message(self.t("lang_changed"))
             else:
@@ -815,6 +817,28 @@ class TelegramBot:
                 + f"⚡ Auto-Update: `{', '.join(self._get_autoupdate()) or '-'}`"
             )
 
+        elif text.startswith("/logs"):
+            parts = text.split()
+            if len(parts) < 2:
+                self.send_message(self.t("logs_usage"))
+                return
+            name, err = self._resolve_container(parts[1])
+            if err:
+                self.send_message(err)
+                return
+            result = subprocess.run(
+                ["docker", "logs", "--tail", "30", name],
+                capture_output=True, text=True, timeout=10
+            )
+            output = result.stdout or result.stderr
+            if output.strip():
+                # Telegram message limit is 4096, truncate if needed
+                if len(output) > 3500:
+                    output = output[-3500:]
+                self.send_message(self.t("logs_title", name=name) + f"\n```\n{output.strip()}\n```")
+            else:
+                self.send_message(self.t("logs_empty", name=name))
+
         elif text == "/help" or text == "/start":
             from version import VERSION
             self.send_message(
@@ -830,6 +854,7 @@ class TelegramBot:
                 + self.t("help_autoupdate") + "\n"
                 + self.t("help_selfupdate") + "\n"
                 + self.t("help_debug") + "\n"
+                + self.t("help_logs") + "\n"
                 + self.t("help_lang") + "\n"
                 + self.t("help_settings") + "\n"
                 + self.t("help_help")
