@@ -49,7 +49,7 @@ with open(README, encoding="utf-8") as f:
 
 print("\n=== README: ENV VARS ===")
 for var in ["BOT_TOKEN", "CHAT_ID", "CRON_SCHEDULE", "EXCLUDE_CONTAINERS",
-            "AUTO_SELFUPDATE", "LANGUAGE", "WEB_UI", "WEB_PORT", "WEB_PASSWORD", "TZ"]:
+            "AUTO_SELFUPDATE", "LANGUAGE", "WEB_UI", "WEB_PORT", "WEB_PASSWORD", "TZ", "DOCKER_HOST"]:
     check(var in readme, var)
 
 print("\n=== README: COMMANDS ===")
@@ -58,7 +58,7 @@ for cmd in ["/status", "/check", "/updates", "/cleanup", "/history",
     check(cmd in readme, cmd)
 
 print("\n=== README: FEATURES ===")
-for feat in ["Web UI", "Multi-language", "Auto-rollback", "Self-update"]:
+for feat in ["Web UI", "Multi-language", "Auto-rollback", "Self-update", "Socket Proxy"]:
     check(feat.lower() in readme.lower(), feat)
 
 print()
