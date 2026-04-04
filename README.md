@@ -29,6 +29,7 @@ Your Docker container watchdog — monitors images for updates and lets you mana
 - **Multi-language** — 16 languages included, switch via `/lang` or add your own
 - **Optional Web UI** — dashboard with status, history, and settings, password-protected
 - **Works with and without Docker Hub login** — credentials are optional
+- **Multi-channel notifications** — Telegram, Discord, and generic webhooks (Ntfy, Gotify, Home Assistant, ...)
 - **Lightweight** — Python standard library only, no extra dependencies
 - **Docker-native** — runs as a container, manages containers via Docker socket
 
@@ -188,6 +189,8 @@ Pinned containers (`/pin nginx`) are completely excluded from update checks. Use
 | `WEB_UI` | `false` | Enable optional web dashboard |
 | `WEB_PORT` | `8080` | Web UI port (inside container) |
 | `WEB_PASSWORD` | | Password for Web UI (Basic Auth). Leave empty for no protection |
+| `DISCORD_WEBHOOK` | | Discord webhook URL for notifications |
+| `WEBHOOK_URL` | | Generic webhook URL (JSON POST) for notifications |
 | `TZ` | `Europe/Berlin` | Timezone for scheduling |
 | `DOCKER_HOST` | | Docker API endpoint (e.g. `tcp://socket-proxy:2375` for socket proxy) |
 
@@ -267,6 +270,53 @@ Create a JSON file in the `lang/` directory (e.g. `sv.json` for Swedish) with al
 volumes:
   - ./my-languages:/app/lang
 ```
+
+## Notification Channels
+
+Docksentry sends notifications via **Telegram** (primary, with interactive commands) and optionally via **Discord** and/or **generic webhooks**.
+
+| Channel | Updates Available | Update Results | Interactive Commands |
+|---------|:-:|:-:|:-:|
+| **Telegram** | ✅ with buttons | ✅ | ✅ full control |
+| **Discord** | ✅ rich embeds | ✅ rich embeds | via Web UI |
+| **Webhook** | ✅ JSON | ✅ JSON | via Web UI |
+
+### Discord
+
+Add a webhook URL to receive notifications as rich embeds in a Discord channel:
+
+1. In Discord: Server Settings → Integrations → Webhooks → **New Webhook**
+2. Copy the webhook URL
+3. Add to your container:
+
+```yaml
+environment:
+  - DISCORD_WEBHOOK=https://discord.com/api/webhooks/123456/abcdef...
+```
+
+### Generic Webhook
+
+For integration with Ntfy, Gotify, Home Assistant, or any service that accepts JSON POST requests:
+
+```yaml
+environment:
+  - WEBHOOK_URL=https://your-service/webhook
+```
+
+**Payload format:**
+
+```json
+{
+  "event": "updates_available",
+  "source": "docksentry",
+  "count": 2,
+  "containers": [
+    {"name": "nginx", "image": "nginx:latest", "size": "141 MB", "created": "2026-03-15", "compose": false}
+  ]
+}
+```
+
+Events: `updates_available`, `update_result`, `message`
 
 ## Docker Compose Support
 
