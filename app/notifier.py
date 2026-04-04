@@ -58,7 +58,10 @@ class Notifier:
             req = urllib.request.Request(
                 self.config.discord_webhook,
                 data=data,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "Docksentry/1.0",
+                },
                 method="POST",
             )
             with urllib.request.urlopen(req, timeout=15) as resp:
