@@ -2,6 +2,16 @@
 
 All notable changes to Docksentry (formerly Docker Telegram Updater) are documented here.
 
+## [1.8.0] - 2026-04-04
+
+### Added
+- **Discord notifications** — rich embeds for update alerts, success/failure results
+- **Generic webhook notifications** — JSON POST to Ntfy, Gotify, Home Assistant, or any HTTP endpoint
+- Multi-channel architecture: Telegram (interactive), Discord (embeds), Webhook (JSON) — all run in parallel
+
+### Fixed
+- Discord webhook: add `User-Agent` header to avoid Cloudflare 403 block
+
 ## [1.7.0] - 2026-04-03
 
 ### Added
