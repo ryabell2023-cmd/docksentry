@@ -15,6 +15,7 @@ class TelegramBot:
         self.config = config
         self.running = True
         self.update_running = False
+        self.notifier = None  # Set by main.py after init
         from i18n import get_translator
         self.t = get_translator(config.language)
 
@@ -164,8 +165,12 @@ class TelegramBot:
             success, msg = checker.update_container(target["name"], target["image"], **compose_kwargs)
             status = "✅" if success else "❌"
             self.send_message(f"{status} `{container_name}`: {msg}")
+            if self.notifier:
+                self.notifier.send_update_result(container_name, target["image"], success, msg)
         except Exception as e:
             self.send_message(f"❌ `{container_name}`: {str(e)[:200]}")
+            if self.notifier:
+                self.notifier.send_update_result(container_name, target.get("image", "?"), False, str(e)[:200])
 
         # Remove from pending list
         remaining = [u for u in updates if u["name"] != container_name]
@@ -191,8 +196,12 @@ class TelegramBot:
                     success, msg = checker.update_container(u["name"], u["image"], **compose_kwargs)
                     status = "✅" if success else "❌"
                     results.append(f"{status} `{u['name']}`: {msg}")
+                    if self.notifier:
+                        self.notifier.send_update_result(u["name"], u["image"], success, msg)
                 except Exception as e:
                     results.append(f"❌ `{u['name']}`: {str(e)[:200]}")
+                    if self.notifier:
+                        self.notifier.send_update_result(u["name"], u["image"], False, str(e)[:200])
             self.send_message(self.t("autoupdate_done") + "\n\n" + "\n".join(results))
 
             # Remove auto-updated from pending
@@ -229,6 +238,10 @@ class TelegramBot:
 
         reply_markup = {"inline_keyboard": keyboard}
         self.send_message(text, reply_markup)
+
+        # Also notify external channels
+        if self.notifier:
+            self.notifier.send_updates_available(updates)
 
     def notify_no_updates(self):
         self.send_message(self.t("all_up_to_date"))
@@ -470,8 +483,12 @@ class TelegramBot:
                 success, msg = updater.update_container(u["name"], u["image"], **compose_kwargs)
                 status = "✅" if success else "❌"
                 results.append(f"{status} `{u['name']}`: {msg}")
+                if self.notifier:
+                    self.notifier.send_update_result(u["name"], u["image"], success, msg)
             except Exception as e:
                 results.append(f"❌ `{u['name']}`: {str(e)[:200]}")
+                if self.notifier:
+                    self.notifier.send_update_result(u["name"], u.get("image", "?"), False, str(e)[:200])
 
         try:
             os.remove(pending_file)

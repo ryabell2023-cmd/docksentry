@@ -5,7 +5,9 @@ import os
 
 
 class Config:
-    def __init__(self, bot_token, chat_id, cron_schedule, exclude_containers, data_dir, auto_selfupdate, language, web_ui, web_port, web_password):
+    def __init__(self, bot_token, chat_id, cron_schedule, exclude_containers, data_dir,
+                 auto_selfupdate, language, web_ui, web_port, web_password,
+                 discord_webhook, webhook_url):
         self.bot_token = bot_token
         self.chat_id = chat_id
         self.cron_schedule = cron_schedule
@@ -21,6 +23,8 @@ class Config:
         self.web_ui = web_ui
         self.web_port = web_port
         self.web_password = web_password
+        self.discord_webhook = discord_webhook
+        self.webhook_url = webhook_url
 
     @classmethod
     def from_env(cls):
@@ -38,4 +42,6 @@ class Config:
             web_ui=os.environ.get("WEB_UI", "false").lower() in ("true", "1", "yes"),
             web_port=int(os.environ.get("WEB_PORT", "8080")),
             web_password=os.environ.get("WEB_PASSWORD", ""),
+            discord_webhook=os.environ.get("DISCORD_WEBHOOK", ""),
+            webhook_url=os.environ.get("WEBHOOK_URL", ""),
         )

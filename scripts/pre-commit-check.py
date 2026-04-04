@@ -49,7 +49,8 @@ with open(README, encoding="utf-8") as f:
 
 print("\n=== README: ENV VARS ===")
 for var in ["BOT_TOKEN", "CHAT_ID", "CRON_SCHEDULE", "EXCLUDE_CONTAINERS",
-            "AUTO_SELFUPDATE", "LANGUAGE", "WEB_UI", "WEB_PORT", "WEB_PASSWORD", "TZ", "DOCKER_HOST"]:
+            "AUTO_SELFUPDATE", "LANGUAGE", "WEB_UI", "WEB_PORT", "WEB_PASSWORD",
+            "DISCORD_WEBHOOK", "WEBHOOK_URL", "TZ", "DOCKER_HOST"]:
     check(var in readme, var)
 
 print("\n=== README: COMMANDS ===")

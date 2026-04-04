@@ -29,6 +29,7 @@ Your Docker container watchdog — monitors images for updates and lets you mana
 - **Multi-language** — 16 languages included, switch via `/lang` or add your own
 - **Optional Web UI** — dashboard with status, history, and settings, password-protected
 - **Works with and without Docker Hub login** — credentials are optional
+- **Multi-channel notifications** — Telegram, Discord, and generic webhooks (Ntfy, Gotify, Home Assistant, ...)
 - **Lightweight** — Python standard library only, no extra dependencies
 - **Docker-native** — runs as a container, manages containers via Docker socket
 
@@ -188,6 +189,8 @@ Pinned containers (`/pin nginx`) are completely excluded from update checks. Use
 | `WEB_UI` | `false` | Enable optional web dashboard |
 | `WEB_PORT` | `8080` | Web UI port (inside container) |
 | `WEB_PASSWORD` | | Password for Web UI (Basic Auth). Leave empty for no protection |
+| `DISCORD_WEBHOOK` | | Discord webhook URL for notifications |
+| `WEBHOOK_URL` | | Generic webhook URL (JSON POST) for notifications |
 | `TZ` | `Europe/Berlin` | Timezone for scheduling |
 | `DOCKER_HOST` | | Docker API endpoint (e.g. `tcp://socket-proxy:2375` for socket proxy) |
 
@@ -267,6 +270,53 @@ Create a JSON file in the `lang/` directory (e.g. `sv.json` for Swedish) with al
 volumes:
   - ./my-languages:/app/lang
 ```
+
+## Notification Channels
+
+Docksentry sends notifications via **Telegram** (primary, with interactive commands) and optionally via **Discord** and/or **generic webhooks**.
+
+| Channel | Updates Available | Update Results | Interactive Commands |
+|---------|:-:|:-:|:-:|
+| **Telegram** | ✅ with buttons | ✅ | ✅ full control |
+| **Discord** | ✅ rich embeds | ✅ rich embeds | via Web UI |
+| **Webhook** | ✅ JSON | ✅ JSON | via Web UI |
+
+### Discord
+
+Add a webhook URL to receive notifications as rich embeds in a Discord channel:
+
+1. In Discord: Server Settings → Integrations → Webhooks → **New Webhook**
+2. Copy the webhook URL
+3. Add to your container:
+
+```yaml
+environment:
+  - DISCORD_WEBHOOK=https://discord.com/api/webhooks/123456/abcdef...
+```
+
+### Generic Webhook
+
+For integration with Ntfy, Gotify, Home Assistant, or any service that accepts JSON POST requests:
+
+```yaml
+environment:
+  - WEBHOOK_URL=https://your-service/webhook
+```
+
+**Payload format:**
+
+```json
+{
+  "event": "updates_available",
+  "source": "docksentry",
+  "count": 2,
+  "containers": [
+    {"name": "nginx", "image": "nginx:latest", "size": "141 MB", "created": "2026-03-15", "compose": false}
+  ]
+}
+```
+
+Events: `updates_available`, `update_result`, `message`
 
 ## Docker Compose Support
 
@@ -421,6 +471,28 @@ docksentry.yourdomain.com {
 | Private network | Medium | Internal Docker network for proxy |
 | Rotate Telegram bot token | Low | Revoke via @BotFather if compromised |
 | Docker Hub login | Low | Avoids rate limits, credentials read-only |
+
+## Contributing
+
+Docksentry is an open-source project and contributions are welcome!
+
+- **Feature ideas?** Open an [Issue](https://github.com/amayer1983/docksentry/issues) with the label `enhancement`
+- **Found a bug?** Open an [Issue](https://github.com/amayer1983/docksentry/issues) with steps to reproduce
+- **Translation improvements?** Submit a PR for `app/lang/*.json` — see [Multi-Language](#multi-language) for details
+- **Code contributions?** Fork, create a feature branch, and open a Pull Request
+
+### Roadmap ideas — your input wanted!
+
+We'd love to hear what features matter most to you. Some ideas under consideration:
+
+- Full Discord bot with slash commands (interactive control like Telegram)
+- Slack integration
+- Notification filters (only critical updates, severity levels)
+- Scheduled maintenance windows
+- Container grouping / tags
+- REST API for external automation
+
+**Vote or suggest:** Open an issue at [github.com/amayer1983/docksentry/issues](https://github.com/amayer1983/docksentry/issues) — every idea counts!
 
 ## License
 

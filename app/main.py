@@ -11,6 +11,7 @@ from config import Config
 from telegram_bot import TelegramBot
 from update_checker import UpdateChecker
 from scheduler import Scheduler
+from notifier import Notifier
 
 
 def main():
@@ -21,6 +22,8 @@ def main():
         sys.exit(1)
 
     bot = TelegramBot(config)
+    notifier = Notifier(config)
+    bot.notifier = notifier
     checker = UpdateChecker(config)
     scheduler = Scheduler(config, checker, bot)
     web = None
@@ -52,6 +55,10 @@ def main():
     print(f"Language: {config.language}")
     if config.web_ui:
         print(f"Web UI: http://0.0.0.0:{config.web_port}")
+    if config.discord_webhook:
+        print(f"Discord: webhook configured")
+    if config.webhook_url:
+        print(f"Webhook: {config.webhook_url}")
 
     # Start bot listener (blocking)
     bot.listen(checker, scheduler)
