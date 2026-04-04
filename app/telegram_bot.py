@@ -297,18 +297,15 @@ class TelegramBot:
         self._do_selfupdate(config, own_name, own_image)
 
     def _do_selfupdate(self, config, own_name, own_image):
-        """Execute selfupdate: rebuild run command from inspect, stop, recreate, exit."""
-        # Create update script that runs after this container stops
-        update_cmd = (
-            f"docker stop {own_name} && "
-            f"docker rename {own_name} {own_name}_old && "
-            f"docker run -d "
-        )
+        """Execute selfupdate via a temporary helper container on the host.
 
+        The old approach (Popen + sys.exit) failed because Docker kills all
+        processes inside a container when PID 1 exits. Instead, we launch a
+        short-lived helper container that runs on the host and performs the
+        stop/rename/run/cleanup sequence from outside.
+        """
         # Rebuild run command from inspect
-        run_args = []
-
-        run_args.extend(["--name", own_name])
+        run_args = ["--name", own_name]
 
         # Restart policy
         restart = config.get("HostConfig", {}).get("RestartPolicy", {})
@@ -360,16 +357,41 @@ class TelegramBot:
         for opt in config.get("HostConfig", {}).get("SecurityOpt", []) or []:
             run_args.extend(["--security-opt", opt])
 
-        # Build full command
+        # Build the full recreation command
         run_parts = " ".join(f'"{a}"' if " " in a or "=" in a else a for a in run_args)
-        update_cmd += f"{run_parts} {own_image} && docker rm {own_name}_old"
-
-        # Execute: run update in background, then exit
-        subprocess.Popen(
-            ["sh", "-c", f"sleep 2 && {update_cmd}"],
-            start_new_session=True
+        update_script = (
+            f"sleep 3 && "
+            f"docker stop {own_name} && "
+            f"docker rename {own_name} {own_name}_old && "
+            f"docker run -d {run_parts} {own_image} && "
+            f"docker rm {own_name}_old"
         )
-        sys.exit(0)
+
+        # Launch a temporary helper container on the host that performs the swap.
+        # This container survives because it runs independently on the Docker host.
+        helper_name = f"{own_name}_updater"
+        # Clean up any leftover helper from a previous attempt
+        subprocess.run(["docker", "rm", "-f", helper_name],
+                       capture_output=True, timeout=10)
+
+        result = subprocess.run([
+            "docker", "run", "-d",
+            "--name", helper_name,
+            "--rm",
+            "-v", "/var/run/docker.sock:/var/run/docker.sock",
+            "docker:cli",
+            "sh", "-c", update_script
+        ], capture_output=True, text=True, timeout=30)
+
+        if result.returncode != 0:
+            self.send_message(f"❌ Selfupdate failed: {result.stderr[:200]}")
+            return
+
+        # The helper container will stop us in ~3 seconds.
+        # Just wait here — no sys.exit needed.
+        print(f"Selfupdate helper started ({helper_name}). Waiting for shutdown...")
+        import time
+        time.sleep(30)
 
     def check_selfupdate_auto(self):
         """Automatic selfupdate check - triggered by scheduler when AUTO_SELFUPDATE=true."""
