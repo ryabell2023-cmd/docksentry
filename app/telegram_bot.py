@@ -626,7 +626,7 @@ class TelegramBot:
                 # Clean up uptime display
                 uptime = uptime.replace(" (healthy)", "").replace(" (unhealthy)", "").replace(" (health: starting)", "")
 
-                containers.append(f"{icon} `{name}`\n     ⏱ {uptime} · 📦 {image}")
+                containers.append(f"{icon} `{name}`\n     ⏱ {uptime} · 📦 `{image}`")
 
             # Summary line
             summary = f"📊 *{total}* {self.t('status_containers')}"
