@@ -2,6 +2,11 @@
 
 All notable changes to Docksentry (formerly Docker Telegram Updater) are documented here.
 
+## [1.11.3] - 2026-04-19
+
+### Improved
+- **Telegram message fallback** — automatically retries without Markdown formatting if Telegram rejects a message, ensuring notifications are always delivered
+
 ## [1.11.2] - 2026-04-19
 
 ### Fixed

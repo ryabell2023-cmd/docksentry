@@ -97,7 +97,12 @@ class TelegramBot:
             data["message_thread_id"] = self.config.telegram_topic_id
         if reply_markup:
             data["reply_markup"] = json.dumps(reply_markup)
-        return self.api_call("sendMessage", data)
+        result = self.api_call("sendMessage", data)
+        if not result or not result.get("ok"):
+            # Retry without Markdown if parsing failed
+            data.pop("parse_mode", None)
+            result = self.api_call("sendMessage", data)
+        return result
 
     def answer_callback(self, callback_id, text):
         self.api_call("answerCallbackQuery", {
