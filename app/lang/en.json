@@ -118,5 +118,6 @@
   "web_pinned_badge": "pinned",
   "web_autoupdate_badge": "auto",
   "web_autoupdate_enable": "Enable auto-update",
-  "web_autoupdate_disable": "Disable auto-update"
+  "web_autoupdate_disable": "Disable auto-update",
+  "web_topic_id_placeholder": "Optional — for groups with topics enabled"
 }

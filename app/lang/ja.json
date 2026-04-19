@@ -118,5 +118,6 @@
   "web_pinned_badge": "固定中",
   "web_autoupdate_badge": "auto",
   "web_autoupdate_enable": "自動更新を有効にする",
-  "web_autoupdate_disable": "自動更新を無効にする"
+  "web_autoupdate_disable": "自動更新を無効にする",
+  "web_topic_id_placeholder": "オプション — トピック有効のグループ用"
 }

@@ -114,6 +114,7 @@ volumes:
 | `WEB_UI` | `false` | Enable web dashboard |
 | `WEB_PORT` | `8080` | Web UI port |
 | `WEB_PASSWORD` | | Web UI password (Basic Auth) |
+| `TELEGRAM_TOPIC_ID` | | Telegram topic/thread ID (for groups with topics) |
 | `DISCORD_WEBHOOK` | | Discord webhook URL |
 | `WEBHOOK_URL` | | Generic webhook URL (JSON POST) |
 | `TZ` | `Europe/Berlin` | Timezone |

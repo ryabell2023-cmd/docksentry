@@ -93,6 +93,8 @@ class TelegramBot:
             "parse_mode": "Markdown",
             "disable_web_page_preview": "true"
         }
+        if self.config.telegram_topic_id:
+            data["message_thread_id"] = self.config.telegram_topic_id
         if reply_markup:
             data["reply_markup"] = json.dumps(reply_markup)
         return self.api_call("sendMessage", data)

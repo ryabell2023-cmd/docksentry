@@ -2,6 +2,12 @@
 
 All notable changes to Docksentry (formerly Docker Telegram Updater) are documented here.
 
+## [1.11.0] - 2026-04-19
+
+### Added
+- **Telegram Topic ID support** — send messages to a specific topic/thread in Telegram groups with topics enabled (`TELEGRAM_TOPIC_ID` env var)
+- Topic ID editable in Web UI settings and persisted across restarts
+
 ## [1.10.0] - 2026-04-19
 
 ### Fixed

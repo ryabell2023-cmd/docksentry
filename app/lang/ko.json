@@ -118,5 +118,6 @@
   "web_pinned_badge": "고정됨",
   "web_autoupdate_badge": "auto",
   "web_autoupdate_enable": "자동 업데이트 활성화",
-  "web_autoupdate_disable": "자동 업데이트 비활성화"
+  "web_autoupdate_disable": "자동 업데이트 비활성화",
+  "web_topic_id_placeholder": "선택 사항 — 토픽이 활성화된 그룹용"
 }

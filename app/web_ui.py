@@ -230,6 +230,10 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
                 if "webhook_url" in params:
                     config.webhook_url = params["webhook_url"][0].strip()
 
+                # Update Telegram Topic ID
+                if "telegram_topic_id" in params:
+                    config.telegram_topic_id = params["telegram_topic_id"][0].strip()
+
                 # Persist all changes
                 config.save_persistent()
 
@@ -448,6 +452,11 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
 <div style="margin-top:8px">
 <label>{t("web_excluded")}</label>
 <input type="text" name="exclude_containers" value="{', '.join(config.exclude_containers)}" placeholder="container1, container2">
+</div>
+
+<div style="margin-top:8px">
+<label>Telegram Topic ID</label>
+<input type="text" name="telegram_topic_id" value="{config.telegram_topic_id}" placeholder="{t("web_topic_id_placeholder")}">
 </div>
 
 <div style="margin-top:8px">

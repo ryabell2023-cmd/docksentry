@@ -9,13 +9,14 @@ import os
 PERSISTENT_KEYS = [
     "cron_schedule", "exclude_containers", "auto_selfupdate",
     "language", "web_password", "discord_webhook", "webhook_url", "debug",
+    "telegram_topic_id",
 ]
 
 
 class Config:
     def __init__(self, bot_token, chat_id, cron_schedule, exclude_containers, data_dir,
                  auto_selfupdate, language, web_ui, web_port, web_password,
-                 discord_webhook, webhook_url):
+                 discord_webhook, webhook_url, telegram_topic_id):
         self.bot_token = bot_token
         self.chat_id = chat_id
         self.cron_schedule = cron_schedule
@@ -34,6 +35,7 @@ class Config:
         self.web_password = web_password
         self.discord_webhook = discord_webhook
         self.webhook_url = webhook_url
+        self.telegram_topic_id = telegram_topic_id
 
         # Load persistent overrides from settings.json
         self._load_persistent()
@@ -80,4 +82,5 @@ class Config:
             web_password=os.environ.get("WEB_PASSWORD", ""),
             discord_webhook=os.environ.get("DISCORD_WEBHOOK", ""),
             webhook_url=os.environ.get("WEBHOOK_URL", ""),
+            telegram_topic_id=os.environ.get("TELEGRAM_TOPIC_ID", ""),
         )

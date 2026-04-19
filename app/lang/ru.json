@@ -118,5 +118,6 @@
   "web_pinned_badge": "закреплён",
   "web_autoupdate_badge": "auto",
   "web_autoupdate_enable": "Включить автообновление",
-  "web_autoupdate_disable": "Отключить автообновление"
+  "web_autoupdate_disable": "Отключить автообновление",
+  "web_topic_id_placeholder": "Необязательно — для групп с включёнными темами"
 }
