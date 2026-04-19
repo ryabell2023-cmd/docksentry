@@ -2,6 +2,12 @@
 
 All notable changes to Docksentry (formerly Docker Telegram Updater) are documented here.
 
+## [1.11.1] - 2026-04-19
+
+### Fixed
+- **`/status` crash** — split long status messages into chunks when exceeding Telegram's 4096 char limit (fixes HTTP 400 for users with many containers)
+- **Synology / NAS compatibility** — documented `DOCKER_API_VERSION` workaround for Docker CLI version mismatch
+
 ## [1.11.0] - 2026-04-19
 
 ### Added
