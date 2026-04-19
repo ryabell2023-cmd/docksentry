@@ -666,7 +666,21 @@ class TelegramBot:
 
             header += f"\n{'─' * 28}\n\n"
 
-            self.send_message(header + "\n".join(containers))
+            # Split into chunks if message exceeds Telegram's 4096 char limit
+            full_msg = header + "\n".join(containers)
+            if len(full_msg) <= 4000:
+                self.send_message(full_msg)
+            else:
+                # Send header first, then containers in chunks
+                self.send_message(header.rstrip())
+                chunk = ""
+                for c in containers:
+                    if len(chunk) + len(c) + 1 > 3500:
+                        self.send_message(chunk)
+                        chunk = ""
+                    chunk += c + "\n"
+                if chunk.strip():
+                    self.send_message(chunk)
 
         elif text == "/check":
             self.send_message(self.t("checking_updates"))
