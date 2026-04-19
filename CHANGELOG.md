@@ -2,6 +2,11 @@
 
 All notable changes to Docksentry (formerly Docker Telegram Updater) are documented here.
 
+## [1.11.2] - 2026-04-19
+
+### Fixed
+- **`/status` Markdown error** — image names with underscores caused Telegram HTTP 400 (now wrapped in code formatting)
+
 ## [1.11.1] - 2026-04-19
 
 ### Fixed
