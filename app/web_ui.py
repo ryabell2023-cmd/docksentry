@@ -115,12 +115,51 @@ def create_handler(config, checker, bot, password=None):
             except Exception:
                 return False
 
+        def _check_csrf(self):
+            """Origin/Referer-based CSRF check for state-changing requests.
+
+            Modern browsers always send `Origin` on cross-origin POSTs (and
+            usually on same-origin POSTs too). For older browsers we fall
+            back to `Referer`. Either header's host:port must match the
+            request's `Host` header.
+
+            A request that arrives without Origin AND without Referer is
+            rejected — every legitimate browser sends at least one.
+            """
+            host = (self.headers.get("Host") or "").strip().lower()
+            if not host:
+                return False
+
+            origin = (self.headers.get("Origin") or "").strip()
+            referer = (self.headers.get("Referer") or "").strip()
+            source = origin or referer
+            if not source:
+                return False
+
+            try:
+                source_netloc = urlparse(source).netloc.lower()
+            except Exception:
+                return False
+
+            if not source_netloc:
+                return False
+
+            # Compare host:port. Browsers always include the port in netloc
+            # when it's non-default, and the Host header includes it too.
+            return source_netloc == host
+
         def _send_auth_required(self):
             self.send_response(401)
             self.send_header("WWW-Authenticate", 'Basic realm="Docksentry"')
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(b"<h1>401 - Login required</h1>")
+
+        def _send_forbidden(self, reason="Forbidden"):
+            self.send_response(403)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(f"<h1>403 - {_e(reason)}</h1>".encode())
 
         def _send_html(self, html, status=200):
             self.send_response(status)
@@ -274,6 +313,11 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
         def do_POST(self):
             if not self._check_auth():
                 return self._send_auth_required()
+            # CSRF mitigation: every POST must originate from the same host.
+            # Forged cross-origin POSTs (from a malicious site abusing the
+            # admin's cached Basic Auth credentials) are rejected here.
+            if not self._check_csrf():
+                return self._send_forbidden("CSRF check failed")
             path = self._get_path()
             if path == "/settings":
                 length = int(self.headers.get("Content-Length", 0))
