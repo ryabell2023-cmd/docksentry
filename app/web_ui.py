@@ -3,6 +3,8 @@
 
 import base64
 import hashlib
+import html
+import ipaddress
 import json
 import os
 import secrets
@@ -10,6 +12,83 @@ import subprocess
 import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
+
+
+def _e(value):
+    """HTML-escape a value (including quotes) for safe insertion into HTML
+    content or attribute values. Always coerces to str first."""
+    return html.escape(str(value if value is not None else ""), quote=True)
+
+
+# Cloud metadata endpoints — credential theft targets, hard-blocked
+_CLOUD_METADATA_HOSTS = {
+    "169.254.169.254",          # AWS, Azure, OpenStack, DigitalOcean (IPv4 link-local)
+    "fd00:ec2::254",            # AWS IPv6 metadata
+    "metadata.google.internal", # GCP
+    "metadata.goog",            # GCP
+    "metadata",                 # Some cloud providers' short hostname
+}
+
+# Discord webhook hosts (used for stricter discord_webhook validation)
+_DISCORD_HOSTS = {
+    "discord.com",
+    "discordapp.com",
+    "canary.discord.com",
+    "ptb.discord.com",
+}
+
+
+def _validate_webhook_url(url, kind="generic"):
+    """
+    Validate a user-supplied webhook URL.
+
+    kind="generic": http(s) only, blocks cloud metadata endpoints. Allows
+        private/LAN addresses (selfhosted users frequently target Ntfy/Gotify/
+        Home Assistant on internal networks — that's legitimate).
+    kind="discord": additionally requires the host to be an official Discord
+        webhook host.
+
+    Returns (ok: bool, error_message: str|None). Empty/blank URLs are treated
+    as "disabled" and pass validation.
+    """
+    if not url or not url.strip():
+        return True, None
+
+    url = url.strip()
+
+    try:
+        parsed = urlparse(url)
+    except Exception as exc:
+        return False, f"Invalid URL ({exc})"
+
+    if parsed.scheme.lower() not in ("http", "https"):
+        return False, f"Only http:// and https:// URLs are allowed (got {parsed.scheme!r})"
+
+    if not parsed.hostname:
+        return False, "URL has no hostname"
+
+    host_lower = parsed.hostname.lower()
+
+    # Cloud metadata: block hostname form
+    if host_lower in _CLOUD_METADATA_HOSTS:
+        return False, f"Cloud metadata endpoint ({host_lower}) is blocked"
+
+    # Cloud metadata: block IP-literal form (e.g. http://169.254.169.254)
+    try:
+        ip = ipaddress.ip_address(host_lower)
+        if str(ip) in _CLOUD_METADATA_HOSTS:
+            return False, "Cloud metadata endpoint IP is blocked"
+        # Also block link-local addresses — they're rarely used legitimately
+        # and can be abused (AWS metadata is a link-local IP).
+        if ip.is_link_local:
+            return False, f"Link-local address ({ip}) is blocked"
+    except ValueError:
+        pass  # Not a literal IP, that's fine
+
+    if kind == "discord" and host_lower not in _DISCORD_HOSTS:
+        return False, f"Discord webhook host must be discord.com (got {host_lower})"
+
+    return True, None
 
 
 def create_handler(config, checker, bot, password=None):
@@ -99,7 +178,7 @@ def create_handler(config, checker, bot, password=None):
                 nav_html += f'<a href="{href}"{cls}>{label}</a> '
 
             return f"""<!DOCTYPE html>
-<html lang="{config.language}">
+<html lang="{_e(config.language)}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -201,6 +280,26 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
                 body = self.rfile.read(length).decode()
                 params = parse_qs(body)
 
+                # --- Validate before mutating any state ---
+                webhook_errors = []
+                if "discord_webhook" in params:
+                    ok, err = _validate_webhook_url(
+                        params["discord_webhook"][0].strip(), kind="discord"
+                    )
+                    if not ok:
+                        webhook_errors.append(f"Discord webhook: {err}")
+                if "webhook_url" in params:
+                    ok, err = _validate_webhook_url(
+                        params["webhook_url"][0].strip(), kind="generic"
+                    )
+                    if not ok:
+                        webhook_errors.append(f"Webhook URL: {err}")
+                if webhook_errors:
+                    from urllib.parse import quote
+                    self._send_redirect("/settings?error=" + quote(" | ".join(webhook_errors)))
+                    return
+
+                # --- All inputs validated; apply changes ---
                 # Update language
                 if "language" in params:
                     from i18n import available_languages, get_translator
@@ -313,23 +412,24 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
                 if c["name"] in auto_list:
                     badges += f' <span class="badge badge-purple">{t("web_autoupdate_badge")}</span>'
 
-                # Action buttons
+                # Action buttons (container name is escaped for safe use in HTML attributes)
+                name_attr = _e(c["name"])
                 actions = ""
                 if c["name"] in pending_names:
-                    actions += f'<form method="POST" action="/api/update" style="display:inline"><input type="hidden" name="name" value="{c["name"]}"><button type="submit" class="btn-sm btn-green">{t("web_update")}</button></form> '
+                    actions += f'<form method="POST" action="/api/update" style="display:inline"><input type="hidden" name="name" value="{name_attr}"><button type="submit" class="btn-sm btn-green">{t("web_update")}</button></form> '
                 if c["name"] in pinned:
-                    actions += f'<form method="POST" action="/api/unpin" style="display:inline"><input type="hidden" name="name" value="{c["name"]}"><button type="submit" class="btn-sm btn-outline">{t("web_unpin")}</button></form> '
+                    actions += f'<form method="POST" action="/api/unpin" style="display:inline"><input type="hidden" name="name" value="{name_attr}"><button type="submit" class="btn-sm btn-outline">{t("web_unpin")}</button></form> '
                 else:
-                    actions += f'<form method="POST" action="/api/pin" style="display:inline"><input type="hidden" name="name" value="{c["name"]}"><button type="submit" class="btn-sm btn-outline">{t("web_pin")}</button></form> '
+                    actions += f'<form method="POST" action="/api/pin" style="display:inline"><input type="hidden" name="name" value="{name_attr}"><button type="submit" class="btn-sm btn-outline">{t("web_pin")}</button></form> '
                 # Autoupdate toggle
                 is_auto = c["name"] in auto_list
                 checked = "checked" if is_auto else ""
-                auto_title = t("web_autoupdate_disable") if is_auto else t("web_autoupdate_enable")
-                actions += f'<form method="POST" action="/api/autoupdate" style="display:inline" title="{auto_title}"><input type="hidden" name="name" value="{c["name"]}"><label class="toggle"><input type="checkbox" {checked} onchange="this.form.submit()"><span class="slider"></span></label></form>'
+                auto_title = _e(t("web_autoupdate_disable") if is_auto else t("web_autoupdate_enable"))
+                actions += f'<form method="POST" action="/api/autoupdate" style="display:inline" title="{auto_title}"><input type="hidden" name="name" value="{name_attr}"><label class="toggle"><input type="checkbox" {checked} onchange="this.form.submit()"><span class="slider"></span></label></form>'
 
                 rows += f"""<tr>
-<td>{c['name']}{badges}</td>
-<td><code>{c['image']}</code></td>
+<td>{_e(c['name'])}{badges}</td>
+<td><code>{_e(c['image'])}</code></td>
 <td>{status_badge}</td>
 <td>{actions}</td>
 </tr>"""
@@ -382,10 +482,10 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
                 for h in reversed(history):
                     icon = '<span class="badge badge-green">✅</span>' if h["success"] else '<span class="badge badge-yellow">❌</span>'
                     rows += f"""<tr>
-<td>{h['timestamp']}</td>
-<td>{h['container']}</td>
+<td>{_e(h.get('timestamp', ''))}</td>
+<td>{_e(h.get('container', ''))}</td>
 <td>{icon}</td>
-<td style="font-size:12px">{h.get('detail', '')}</td>
+<td style="font-size:12px">{_e(h.get('detail', ''))}</td>
 </tr>"""
 
                 content = f"""<div class="card">
@@ -403,8 +503,16 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
             from version import VERSION
             t = get_translator(config.language)
 
-            saved = "?saved=1" in self.path
+            query = parse_qs(urlparse(self.path).query)
+            saved = "saved" in query
             saved_html = f'<div style="background:#1a3a2a;color:#3fb950;padding:10px;border-radius:6px;margin-bottom:16px">{t("web_saved")}</div>' if saved else ""
+
+            error_msg = query.get("error", [""])[0]
+            error_html = (
+                f'<div style="background:#3a1a1a;color:#f85149;padding:10px;border-radius:6px;margin-bottom:16px">'
+                f'⚠️ {_e(error_msg)}</div>'
+                if error_msg else ""
+            )
 
             langs = available_languages()
             lang_names = {"en": "English", "de": "Deutsch", "fr": "Français", "es": "Español", "it": "Italiano", "nl": "Nederlands", "pt": "Português", "pl": "Polski", "tr": "Türkçe", "ru": "Русский", "uk": "Українська", "ar": "العربية", "hi": "हिन्दी", "ja": "日本語", "ko": "한국어", "zh": "中文"}
@@ -412,7 +520,7 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
             for l in langs:
                 sel = 'selected' if l == config.language else ''
                 name = lang_names.get(l, l.upper())
-                lang_options += f'<option value="{l}" {sel}>{name}</option>\n'
+                lang_options += f'<option value="{_e(l)}" {sel}>{_e(name)}</option>\n'
 
             debug_checked = 'checked' if config.debug else ''
             auto_su_checked = 'checked' if config.auto_selfupdate else ''
@@ -423,6 +531,7 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
 
             content = f"""
 {saved_html}
+{error_html}
 <div class="card">
 <h2>{t("web_settings")}</h2>
 <form method="POST" action="/settings">
@@ -436,7 +545,7 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
 </div>
 <div>
 <label>{t("web_cron_schedule")}</label>
-<input type="text" name="cron_schedule" value="{config.cron_schedule}">
+<input type="text" name="cron_schedule" value="{_e(config.cron_schedule)}">
 </div>
 </div>
 
@@ -451,22 +560,22 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
 
 <div style="margin-top:8px">
 <label>{t("web_excluded")}</label>
-<input type="text" name="exclude_containers" value="{', '.join(config.exclude_containers)}" placeholder="container1, container2">
+<input type="text" name="exclude_containers" value="{_e(', '.join(config.exclude_containers))}" placeholder="container1, container2">
 </div>
 
 <div style="margin-top:8px">
 <label>Telegram Topic ID</label>
-<input type="text" name="telegram_topic_id" value="{config.telegram_topic_id}" placeholder="{t("web_topic_id_placeholder")}">
+<input type="text" name="telegram_topic_id" value="{_e(config.telegram_topic_id)}" placeholder="{_e(t('web_topic_id_placeholder'))}">
 </div>
 
 <div style="margin-top:8px">
 <label>Discord Webhook</label>
-<input type="text" name="discord_webhook" value="{config.discord_webhook}" placeholder="https://discord.com/api/webhooks/...">
+<input type="text" name="discord_webhook" value="{_e(config.discord_webhook)}" placeholder="https://discord.com/api/webhooks/...">
 </div>
 
 <div style="margin-top:8px">
 <label>Webhook URL</label>
-<input type="text" name="webhook_url" value="{config.webhook_url}" placeholder="https://your-service/webhook">
+<input type="text" name="webhook_url" value="{_e(config.webhook_url)}" placeholder="https://your-service/webhook">
 </div>
 
 <div style="margin-top:16px">
@@ -479,10 +588,10 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
 <div class="card">
 <h2>Info</h2>
 <table>
-<tr><td>Version</td><td><code>v{VERSION}</code></td></tr>
-<tr><td>Bot Token</td><td><code>{token_masked}</code></td></tr>
-<tr><td>Chat ID</td><td><code>{chat_masked}</code></td></tr>
-<tr><td>Data Dir</td><td><code>{config.data_dir}</code></td></tr>
+<tr><td>Version</td><td><code>v{_e(VERSION)}</code></td></tr>
+<tr><td>Bot Token</td><td><code>{_e(token_masked)}</code></td></tr>
+<tr><td>Chat ID</td><td><code>{_e(chat_masked)}</code></td></tr>
+<tr><td>Data Dir</td><td><code>{_e(config.data_dir)}</code></td></tr>
 </table>
 <p style="font-size:12px;color:#484f58;margin-top:8px">Bot Token and Chat ID can only be changed via environment variables.</p>
 </div>"""
@@ -499,11 +608,12 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
 
             containers = self._get_containers()
 
-            # Container dropdown
+            # Container dropdown (escape names — they appear in HTML attribute and content)
             options = ""
             for c in containers:
                 sel = 'selected' if c["name"] == container else ''
-                options += f'<option value="{c["name"]}" {sel}>{c["name"]}</option>\n'
+                name_e = _e(c["name"])
+                options += f'<option value="{name_e}" {sel}>{name_e}</option>\n'
 
             log_html = ""
             if container:
@@ -513,8 +623,6 @@ pre {{ background: #0d1117; border: 1px solid #30363d; border-radius: 6px; paddi
                 )
                 output = result.stdout or result.stderr
                 if output.strip():
-                    # Escape HTML
-                    import html
                     log_html = f'<pre>{html.escape(output.strip())}</pre>'
                 else:
                     log_html = f'<p style="color:#8b949e">No logs found.</p>'
