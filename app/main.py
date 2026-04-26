@@ -3,9 +3,19 @@
 
 import os
 import signal
+import socket
 import threading
 import time
 import sys
+
+# Force IPv4-only by default — many containers lack IPv6 routing,
+# causing "[Errno 101] Network unreachable" when Python prefers IPv6.
+# Set DOCKSENTRY_IPV6=true to enable IPv6 (only if your network supports it).
+if os.environ.get("DOCKSENTRY_IPV6", "false").lower() not in ("true", "1", "yes"):
+    _orig_getaddrinfo = socket.getaddrinfo
+    def _ipv4_only_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+        return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+    socket.getaddrinfo = _ipv4_only_getaddrinfo
 
 from config import Config
 from telegram_bot import TelegramBot

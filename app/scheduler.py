@@ -39,6 +39,16 @@ class Scheduler:
         for pattern, value in fields:
             if pattern == "*":
                 continue
+            # Handle range with step: "start-end/step" (e.g. "0-20/3")
+            if "/" in pattern and "-" in pattern.split("/")[0]:
+                range_part, step_part = pattern.split("/", 1)
+                start, end = range_part.split("-")
+                step = int(step_part)
+                if not (int(start) <= value <= int(end)):
+                    return False
+                if (value - int(start)) % step != 0:
+                    return False
+                continue
             # Handle */n step values
             if pattern.startswith("*/"):
                 step = int(pattern[2:])

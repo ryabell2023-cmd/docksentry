@@ -120,6 +120,7 @@ volumes:
 | `TZ` | `Europe/Berlin` | Timezone |
 | `DOCKER_HOST` | | Docker API endpoint (for [socket proxy](docs/security.md)) |
 | `DOCKER_API_VERSION` | | Force Docker API version (e.g. `1.43` for Synology/older Docker) |
+| `DOCKSENTRY_IPV6` | `false` | Enable IPv6 outbound connections (default: IPv4-only to avoid `Network unreachable` in containers without IPv6 routing) |
 
 All settings except BOT_TOKEN and CHAT_ID can also be changed via the Web UI and persist across restarts.
 
